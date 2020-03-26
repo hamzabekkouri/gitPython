@@ -1,35 +1,38 @@
-# Client SDR service (provision envirenement for sdr)
+# Client SDR service (provision environment for sdr)
 
 
-This project is a service to deploy a envirenement for client based on its input and all its needed bigata services provisionning in nifi and create relationship beetween each services
+This project is a service to provide an environment for client as service based on project id, project name, email address, and zone of SDR, the environment will contain the needed bigdata services in nifi as process group, the environment will have a relationship between each zone of SDR including exec, data, int, and gin
 
 ## Usage
 
-### I) Run python script direcly from machine
+### I) Run apps with python script directly from the machine
 
-we used for provision envirenement to choosen zone (sdr (nifi) ) the `provision_env.py` with for paramaters as follow:
+We choose for provision environment chosen zone (SDR (nifi) ), project id and project name and email then we run this script `provision_env.py` with 4 parameters as follow:
 
+The script should be run from (SDR admin machine prod) because it is the only one that contains the python package `nipyapi` (nipyapi is the api that we use to communicate with nifi)
 `python provision_env.py -p project_id -pn project_name -e e-mail -z zone
 ` <br>
 
-`p`: project id of envirerement <br>
-`pn`: project name or name of process group that will be created <br>
-`e` : email (orange email or any email allowed to the orange network)
-`z` : zone of sdr nifi (gin, internet, exec and data)
+`p`: project id of environment <br>
+`pn`: project name or name of the process group that will be created <br>
+`e`: email (orange email or any email allowed to the orange network)
+`z`: zone of SDR nifi (gin, internet, exec, and data)
 
-- path of script (in role client sdr service in gitlab) 
+- Path of the script (in role client SDR service in GitLab) 
 
-        path of `provision_env.py` = client_sdr_service/files/provisioning_service/provision_env.py 
-###II) Run apps with ansible direcly 
+        path of `provision_env.py` = client_sdr_service/files/provisioning_service/provision_env.py
+        
+**conclusion**:  To run this script in 4 zones as one time, we will use Ansible 
+###II) Run apps with ansible directly 
 
-Run ansible playbook  direcly from machine (admin prod machine prsdradmnifi0101-0102-0103)
+Run ansible-playbook  directly from machine (admin prod machine prsdradmnifi0101-0102-0103)
 
 ##### This is the steps :
-1.1 - Git clone admin task project <br>
+2.1 - Git clone admin task project <br>
     
 ```git clone https://url_orange/Ansible_admin_tasks.git```
 
-1.2 - create extravars that contain this specific infos  inside admin task project: <br>
+2.2 - create `extravars.json` that contain this specific Infos  inside admin task project: <br>
 
         {
             "project_id": "id_project",
@@ -37,18 +40,18 @@ Run ansible playbook  direcly from machine (admin prod machine prsdradmnifi0101-
             "pg_name": "name of the project"
         }
 
-1.3 - Run Ansible Playbook<br>
+2.3 - Run Ansible Playbook<br>
 
 ```ansible-playbook -i Inventory/nifi_01.pr.admin.diod.fe --private-key /home/nifi/.ssh/deploy_key  -e "@extravars.json" provision_env.yml```<br>
 
  #####Command description<br> 
  
-```nifi_01.pr.admin.diod.fe ``` : inventory that we use to deploy script across admin nodes<br>
-```provision_env.yml```: playbook that we used to run all tasks inside this roles
+```nifi_01.pr.admin.diod.fe ```: inventory that we use to deploy script across admin nodes<br>
+```provision_env.yml```: playbook that we used to run all tasks inside this role
 
-###III) Run apps from https endpoint (direcly in sdr)
+###III) Run apps from https endpoint (directly in SDR)
 
-This normaly the first original version to activate envirenement from sdr admin, first we begin sending request from postman to httpsendpoint in sdr gin, after the request will be routed to the sdr admin to find pgprovi route to launch the ansible that I describe above.
+This normally the first original version to activate the environment from SDR admin, first we begin sending a request from the postman to https endpoint in SDR gin after the request will be routed to the SDR admin to find pgprovi route to launch the ansible that I describe above.
 
 1) request to add on postman : <br>
 
@@ -70,24 +73,38 @@ This normaly the first original version to activate envirenement from sdr admin,
            }
          }
          
-     ##### Screenshot to show how it is the request in postman <br>
-
-     N.B : you should configure ssl context and proxy to enable requesting on postamn with this request <br>
-
-    ![screenshot postman request](Screenshot_postman.png)
+     ##### Screenshot to show how it is the request in postman
+     N.B : you should configure ssl context and proxy to enable requesting on postamn with this request 
+    ![screenshot postman request](/home/hamza/Pictures/Screenshot from 2020-03-16 16-33-27.png)
 
 #### JSON Description
 
-```id_project```(mandatory) : the convention is always begin with 'p' and put after what you want without any space.<br>
+```id_project```(mandatory): the convention always begins with 'p' and put after what you want without any space.<br>
 
 ```name_project```(mandatory): write any name but for now without any space
 
-```email```(mondatory): write orange email or any email that is allowed to our network.
+```email```(mandatory): write an orange email or any email that is allowed to our network.
 
 #### Https Response 
 
-Json that contain  urls of created envirenement direcly and also the response's status  (200,201,400)<br>
+JSON that contain  URLs of the created environment directly and also the response's status  (200,201,400)<br>
 
-```200``` : envirenement already created ==> "ALREADY CREATED OPERATION"<br>
-```201``` : envirenement created ==> "CREATE OPERATION" <br>
+```200``` : environment already created ==> "ALREADY CREATED OPERATION"<br>
+```201``` : environment created ==> "CREATE OPERATION" <br>
 ```400``` : bad request, it will contain specific message as errors for debugging 
+
+# Delete provisioned environment 
+
+Sometimes customers will want to delete their older environment and create another, or sometimes they will create the wrong one and want to delete it, for that we create a service that deletes this created environment on the fly, we used for that also nipyapi to communicate with nifi, so to Delete environment we use for now directly this python command : 
+
+        python delete_env.py -p project _id -pn project_name -z zone 
+
+- Path of delete_env.py : 
+
+        client_sdr_service/files/provisioning_service/delete_env.py
+    
+**Important** : 
+project id should be unique, if not the delete_env.py will delete just identical connection and also the update attribute and ControlRate that contains the name of project id.
+Normally, we use project id and pg name to delete process group from the canvas but for connection and update attribute always still using project_id.
+ControlRate processor should always have name as follow : (controlRate_project_id) to be unique
+ #### still working adding delete as service and send it from https endpoint
