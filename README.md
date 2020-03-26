@@ -72,7 +72,7 @@ This normaly the first original version to activate envirenement from sdr admin,
          
      #####Screenshot to show how it is the request in postman
      N.B : you should configure ssl context and proxy to enable requesting on postamn with this request 
-    ![screenshot postman request](/home/hamza/Pictures/Screenshot from 2020-03-16 16-33-27.png)
+    ![screenshot postman request](Screenshot from 2020-03-16 16-33-27.png)
 
 #### JSON Description
 
